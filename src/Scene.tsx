@@ -74,7 +74,7 @@ const HalftoneComposer = () => {
 const Scene = () => {
   return (
     <div className="scene">
-      <Canvas>
+      <Canvas dpr={[1, 1]}>
         <Suspense fallback={null}>
           <ambientLight intensity={0.12} />
           <directionalLight position={[0, 18, 5]} intensity={2.2} />
