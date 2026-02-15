@@ -1,10 +1,10 @@
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { PerspectiveCamera } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Group } from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { HalftonePass } from "three/addons/postprocessing/HalftonePass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { HalftonePass } from "./postprocessing/HalftonePass";
 
 const SphereRing = () => {
   const ringRef = useRef<Group>(null);
@@ -45,9 +45,7 @@ const HalftoneComposer = () => {
       new HalftonePass({
         shape: 4,
         radius: 5,
-        rotateR: Math.PI / 12,
-        rotateG: Math.PI / 12,
-        rotateB: Math.PI / 12,
+        rotate: Math.PI / 12,
         scatter: 0,
         blending: 1,
         blendingMode: 1,
