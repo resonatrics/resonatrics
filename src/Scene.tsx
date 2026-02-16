@@ -87,4 +87,4 @@ const Scene = () => {
   );
 };
 
-export default Scene;
+export { Scene };
