@@ -22,16 +22,14 @@ const SphereRing = () => {
   });
 
   return (
-    <>
-      <group ref={ringRef}>
-        {spheres.map((position, index) => (
-          <mesh key={index} position={position}>
-            <sphereGeometry args={[sphereRadius, 32, 32]} />
-            <meshStandardMaterial color="#cfcfcf" roughness={1} metalness={0} />
-          </mesh>
-        ))}
-      </group>
-    </>
+    <group ref={ringRef}>
+      {spheres.map((position, index) => (
+        <mesh key={index} position={position}>
+          <sphereGeometry args={[sphereRadius, 32, 32]} />
+          <meshStandardMaterial color="#cfcfcf" roughness={1} metalness={0} />
+        </mesh>
+      ))}
+    </group>
   );
 };
 
@@ -43,13 +41,8 @@ const HalftoneComposer = () => {
     effectComposer.addPass(new RenderPass(scene, camera));
     effectComposer.addPass(
       new HalftonePass({
-        shape: 4,
         radius: 5,
         rotate: Math.PI / 12,
-        scatter: 0,
-        blending: 1,
-        blendingMode: 1,
-        greyscale: false,
       }),
     );
 
