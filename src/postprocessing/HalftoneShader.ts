@@ -9,6 +9,8 @@ const HalftoneShader = {
     scatter: { value: 0 },
     width: { value: 1 },
     height: { value: 1 },
+    invWidth: { value: 1 },
+    invHeight: { value: 1 },
     blending: { value: 1 },
     blendingMode: { value: 1 },
     disable: { value: false },
@@ -44,19 +46,18 @@ const HalftoneShader = {
     uniform float scatter;
     uniform float width;
     uniform float height;
+    uniform float invWidth;
+    uniform float invHeight;
     uniform int shape;
     uniform bool disable;
     uniform float blending;
     uniform int blendingMode;
     varying vec2 vUV;
-    const int samples = 8;
+    const int samples = 4;
+    const float SAMPLE_STEP = PI2 / float( samples );
 
     float blend( float a, float b, float t ) {
       return a * ( 1.0 - t ) + b * t;
-    }
-
-    float hypot( float x, float y ) {
-      return sqrt( x * x + y * y );
     }
 
     float rand( vec2 seed ){
@@ -65,7 +66,7 @@ const HalftoneShader = {
 
     float distanceToDotRadius( float value, vec2 coord, vec2 normal, vec2 p, float angle, float rad_max ) {
 
-      float dist = hypot( coord.x - p.x, coord.y - p.y );
+      float dist = length( coord - p );
       float rad = value;
 
       if ( shape == SHAPE_DOT ) {
@@ -85,7 +86,7 @@ const HalftoneShader = {
 
         rad = pow( abs( rad ), 1.5) * rad_max;
         float dot_p = ( p.x - coord.x ) * normal.x + ( p.y - coord.y ) * normal.y;
-        dist = hypot( normal.x * dot_p, normal.y * dot_p );
+        dist = abs( dot_p );
 
       } else if ( shape == SHAPE_SQUARE ) {
 
@@ -106,27 +107,23 @@ const HalftoneShader = {
       vec2 p2;
       vec2 p3;
       vec2 p4;
-      float samp2;
-      float samp1;
-      float samp3;
-      float samp4;
     };
 
     float getSample( vec2 point ) {
 
-      vec4 tex = texture2D( tDiffuse, vec2( point.x / width, point.y / height ) );
-      float val = (tex.r + tex.g + tex.b) / 3.0;
+      vec2 invSize = vec2( invWidth, invHeight );
+      vec4 tex = texture2D( tDiffuse, point * invSize );
+      float val = ( tex.r + tex.g + tex.b ) / 3.0;
 
       float base = rand( vec2( floor( point.x ), floor( point.y ) ) ) * PI2;
-      float step = PI2 / float( samples );
       float dist = radius * 0.66;
 
       for ( int i = 0; i < samples; ++i ) {
 
-        float r = base + step * float( i );
+        float r = base + SAMPLE_STEP * float( i );
         vec2 coord = point + vec2( cos( r ) * dist, sin( r ) * dist );
-        vec4 t = texture2D( tDiffuse, vec2( coord.x / width, coord.y / height ) );
-        val += (t.r + t.g + t.b) / 3.0;
+        vec4 t = texture2D( tDiffuse, coord * invSize );
+        val += ( t.r + t.g + t.b ) / 3.0;
 
       }
 
@@ -138,16 +135,15 @@ const HalftoneShader = {
     float getDotColour( Cell c, vec2 p, float angle, float aa ) {
 
       float dist_c_1, dist_c_2, dist_c_3, dist_c_4, res;
+      float samp1 = getSample( c.p1 );
+      float samp2 = getSample( c.p2 );
+      float samp3 = getSample( c.p3 );
+      float samp4 = getSample( c.p4 );
 
-      c.samp1 = getSample( c.p1 );
-      c.samp2 = getSample( c.p2 );
-      c.samp3 = getSample( c.p3 );
-      c.samp4 = getSample( c.p4 );
-
-      dist_c_1 = distanceToDotRadius( c.samp1, c.p1, c.normal, p, angle, radius );
-      dist_c_2 = distanceToDotRadius( c.samp2, c.p2, c.normal, p, angle, radius );
-      dist_c_3 = distanceToDotRadius( c.samp3, c.p3, c.normal, p, angle, radius );
-      dist_c_4 = distanceToDotRadius( c.samp4, c.p4, c.normal, p, angle, radius );
+      dist_c_1 = distanceToDotRadius( samp1, c.p1, c.normal, p, angle, radius );
+      dist_c_2 = distanceToDotRadius( samp2, c.p2, c.normal, p, angle, radius );
+      dist_c_3 = distanceToDotRadius( samp3, c.p3, c.normal, p, angle, radius );
+      dist_c_4 = distanceToDotRadius( samp4, c.p4, c.normal, p, angle, radius );
 
       res = ( dist_c_1 > 0.0 ) ? clamp( dist_c_1 / aa, 0.0, 1.0 ) : 0.0;
       res += ( dist_c_2 > 0.0 ) ? clamp( dist_c_2 / aa, 0.0, 1.0 ) : 0.0;
@@ -167,11 +163,10 @@ const HalftoneShader = {
       float threshold = step * 0.5;
       float dot_normal = n.x * ( p.x - origin.x ) + n.y * ( p.y - origin.y );
       float dot_line = -n.y * ( p.x - origin.x ) + n.x * ( p.y - origin.y );
-      vec2 offset = vec2( n.x * dot_normal, n.y * dot_normal );
-      float offset_normal = mod( hypot( offset.x, offset.y ), step );
+      float offset_normal = mod( abs( dot_normal ), step );
       float normal_dir = ( dot_normal < 0.0 ) ? 1.0 : -1.0;
       float normal_scale = ( ( offset_normal < threshold ) ? -offset_normal : step - offset_normal ) * normal_dir;
-      float offset_line = mod( hypot( ( p.x - offset.x ) - origin.x, ( p.y - offset.y ) - origin.y ), step );
+      float offset_line = mod( abs( dot_line ), step );
       float line_dir = ( dot_line < 0.0 ) ? 1.0 : -1.0;
       float line_scale = ( ( offset_line < threshold ) ? -offset_line : step - offset_line ) * line_dir;
 
@@ -230,8 +225,11 @@ const HalftoneShader = {
         Cell cell = getReferenceCell( p, origin, rotate, radius );
         float val = getDotColour( cell, p, rotate, aa );
 
-        vec4 colour = texture2D( tDiffuse, vUV );
-        float grey = (colour.r + colour.g + colour.b) / 3.0;
+        float grey = 0.0;
+        if ( ! ( blendingMode == BLENDING_LINEAR && blending == 1.0 ) ) {
+          vec4 colour = texture2D( tDiffuse, vUV );
+          grey = ( colour.r + colour.g + colour.b ) / 3.0;
+        }
 
         val = blendColour( val, grey, blending );
 
