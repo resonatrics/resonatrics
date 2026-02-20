@@ -26,7 +26,6 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.182.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
-    "globals": "^16.5.0",
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "typescript": "~5.9.3",
