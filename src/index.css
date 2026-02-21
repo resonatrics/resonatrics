@@ -21,8 +21,8 @@
 
 html,
 body,
+h1,
 #root {
   margin: 0;
   padding: 0;
-  background-color: black;
 }
